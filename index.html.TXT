@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Payment & Wallet Linking</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3modal"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #001f3f; color: white; }
+        h2 { color: #FFA500; }
+        button { background: #FFA500; border: none; padding: 10px 20px; font-size: 18px; cursor: pointer; }
+        #qr-container { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h2>🚀 Buy & HODL Our Memecoin Now! 🚀</h2>
+    
+    <h3>1. Scan & Pay with Crypto</h3>
+    <div id="qr-container">
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=YOUR_WALLET_ADDRESS" alt="Crypto QR Code">
+    </div>
+    
+    <h3>2. Connect Your Wallet</h3>
+    <button id="connectWallet">Connect Wallet</button>
+    <button id="disconnectWallet" style="display:none;">Disconnect</button>
+    <p id="walletAddress"></p>
+    <p id="walletBalance"></p>
+    
+    <h3>3. Auto Payment Tracking</h3>
+    <p id="paymentStatus">Waiting for payment...</p>
+    
+    <script>
+        let provider, signer, selectedAddress;
+        async function connectWallet() {
+            const providerOptions = {};
+            const web3Modal = new Web3Modal.default({ cacheProvider: true, providerOptions });
+            try {
+                const instance = await web3Modal.connect();
+                provider = new ethers.providers.Web3Provider(instance);
+                signer = provider.getSigner();
+                selectedAddress = await signer.getAddress();
+                document.getElementById("walletAddress").innerText = "Connected: " + selectedAddress;
+                document.getElementById("connectWallet").style.display = "none";
+                document.getElementById("disconnectWallet").style.display = "block";
+                localStorage.setItem("connectedWallet", selectedAddress);
+                checkForPayment();
+            } catch (error) {
+                console.error("Connection Error:", error);
+            }
+        }
+        function disconnectWallet() {
+            localStorage.removeItem("connectedWallet");
+            document.getElementById("walletAddress").innerText = "";
+            document.getElementById("connectWallet").style.display = "block";
+            document.getElementById("disconnectWallet").style.display = "none";
+        }
+        async function checkForPayment() {
+            const walletAddress = "YOUR_WALLET_ADDRESS"; // Βάλε το δικό σου wallet
+            const provider = new ethers.providers.JsonRpcProvider("https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID");
+            const latestBlock = await provider.getBlockNumber();
+            provider.on("block", async (blockNumber) => {
+                if (blockNumber > latestBlock) {
+                    const balance = await provider.getBalance(walletAddress);
+                    if (balance.gt(ethers.utils.parseEther("0.01"))) { // Αν έχει πληρωθεί τουλάχιστον 0.01 ETH
+                        document.getElementById("paymentStatus").innerText = "✅ Payment Received!";
+                    }
+                }
+            });
+        }
+        document.getElementById("connectWallet").addEventListener("click", connectWallet);
+        document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
+    </script>
+</body>
+</html>
+
+
